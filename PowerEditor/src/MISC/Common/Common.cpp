@@ -1001,6 +1001,46 @@ std::wstring strFromClipboard()
 		}
 		::CloseClipboard();
 	}
+
+	// trim the EOL at the end of string if any
+	// 1: X, \r, \n  => don't change
+	if (clipboardText.length() < 2)
+		return clipboardText;
+
+	// 2: XX, \nX, \rX, X\r, X\n, \r\n, \r\r, \n\n, \n\r
+	if (clipboardText.length() == 2)
+	{
+		if (clipboardText[1] != '\r' && clipboardText[1] != '\n') // XX, \nX, \rX  => don't change 
+			return clipboardText;
+
+		if (clipboardText[0] == '\r' && clipboardText[1] == '\n') // \r\n  => don't change
+			return clipboardText;
+
+		if (clipboardText[0] == '\r' && clipboardText[1] == '\r') // \r\r  => don't change
+			return clipboardText;
+
+		if (clipboardText[0] == '\n' && clipboardText[1] == '\n') // \n\n  => don't change
+			return clipboardText;
+
+		if (clipboardText[0] != '\r' && clipboardText[0] != '\n') // X\n, X\r  => remove \n or \r
+		{
+			wchar_t trimedResult[2]{};
+			trimedResult[0] = clipboardText[0];
+			trimedResult[1] = '\0';
+			return trimedResult;
+		}
+
+		return clipboardText; // \n\r (unlikely happen, but if it does, keep them)
+	}
+	else // length >= 3    => Remove the EOL at the end of string
+	{
+		size_t posEol = clipboardText.length() - 2;
+		if (clipboardText.substr(posEol) == L"\r\n")
+			clipboardText.erase(posEol, 2);
+		else if (clipboardText.substr(posEol + 1) == L"\r" || clipboardText.substr(posEol + 1) == L"\n")
+			clipboardText.erase(posEol + 1, 1);
+	}
+
 	return clipboardText;
 }
 
